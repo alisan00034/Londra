@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<title>Londra v3 · 23-26 Nisan 2026</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Londra" />
+<meta name="theme-color" content="#1a1612" />
+
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%231a1612'/><text x='90' y='118' font-family='Georgia,serif' font-size='110' font-style='italic' fill='%23f4ede0' text-anchor='middle'>L</text><circle cx='138' cy='50' r='8' fill='%23c8462c'/></svg>" />
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%231a1612'/><text x='90' y='118' font-family='Georgia,serif' font-size='110' font-style='italic' fill='%23f4ede0' text-anchor='middle'>L</text><circle cx='138' cy='50' r='8' fill='%23c8462c'/></svg>" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root {
+    --ink: #1a1612;
+    --paper: #f4ede0;
+    --paper-2: #ebe1cd;
+    --accent: #c8462c;
+    --accent-2: #d97e3d;
+    --thames: #2d5d7b;
+    --green: #4a6b3a;
+    --mute: #7a6f5e;
+    --line: #d4c6a8;
+    --gold: #a88a4a;
+    --plane: #6d4c8f;
+    --hotel: #8b3a3a;
+    --booked: #d4a84a;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Fraunces', serif; -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+    height: 100%;
+  }
+  body { min-height: 100vh; min-height: 100dvh; }
+
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr auto 1fr;
+    height: 100vh; height: 100dvh;
+    overflow: hidden;
+  }
+
+  .top {
+    padding: calc(10px + var(--safe-top)) 16px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(200,70,44,.05) 0%, transparent 60%),
+      radial-gradient(circle at 90% 80%, rgba(45,93,123,.04) 0%, transparent 60%);
+  }
+  .top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .brand { font-family: 'Instrument Serif', serif; font-size: 26px; font-weight: 400; line-height: 1; letter-spacing: -.02em; }
+  .brand em { font-style: italic; color: var(--accent); }
+  .brand .v { font-size: 10px; color: var(--mute); font-style: normal; vertical-align: super; margin-left: 4px; font-family: 'JetBrains Mono', monospace; letter-spacing: .1em; }
+  .dates { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); text-align: right; }
+  .dates strong { color: var(--ink); font-weight: 500; }
+  .progress-wrap { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--mute); }
+  .progress-bar { flex: 1; height: 3px; background: var(--paper-2); position: relative; overflow: hidden; border: 1px solid var(--line); }
+  .progress-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0%; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .reset-btn { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .15em; text-transform: uppercase; background: transparent; border: 1px solid var(--line); padding: 3px 8px; color: var(--mute); cursor: pointer; }
+
+  .map-wrap { position: relative; overflow: hidden; min-height: 0; }
+  #map { width: 100%; height: 100%; background: #e8dfc9; }
+  .leaflet-container { font-family: 'Fraunces', serif; background: #e8dfc9; }
+  .leaflet-popup-content-wrapper { border-radius: 2px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+  .leaflet-popup-content { margin: 8px 12px; font-size: 12px; font-weight: 500; }
+  .leaflet-popup-tip { background: var(--paper); border: 1px solid var(--line); }
+
+  .map-marker { background: transparent; border: none; }
+  .pin {
+    width: 26px; height: 26px;
+    background: var(--accent);
+    border: 2px solid var(--paper);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 6px rgba(0,0,0,.25);
+  }
+  .pin-num { transform: rotate(45deg); color: var(--paper); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; }
+  .pin.done { background: var(--green); }
+  .pin.day-1 { background: #c8462c; }
+  .pin.day-2 { background: #d97e3d; }
+  .pin.day-3 { background: #4a6b3a; }
+  .pin.day-4 { background: #2d5d7b; }
+  .pin.food { width: 20px; height: 20px; background: #b8734a; }
+  .pin.food .pin-num { font-size: 9px; }
+  .pin.hotel-pin { background: var(--hotel); width: 30px; height: 30px; }
+  .pin.airport-pin { background: var(--plane); width: 26px; height: 26px; }
+  .pin.active { transform: rotate(-45deg) scale(1.3); box-shadow: 0 0 0 5px rgba(200,70,44,.25), 0 3px 6px rgba(0,0,0,.3); z-index: 1000; }
+
+  .map-legend {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: rgba(244,237,224,.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--mute);
+    z-index: 400;
+    border-radius: 2px;
+  }
+  .legend-row { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .map-filter {
+    position: absolute;
+    top: 8px; left: 8px;
+    background: rgba(244,237,224,.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    padding: 6px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--mute);
+    z-index: 400;
+    border-radius: 2px;
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .map-filter button {
+    background: transparent; border: 1px solid transparent;
+    padding: 2px 6px; color: var(--mute);
+    font-family: inherit; font-size: inherit; letter-spacing: inherit;
+    cursor: pointer;
+  }
+  .map-filter button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .divider {
+    height: 28px;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    cursor: ns-resize;
+    touch-action: none;
+    position: relative;
+    z-index: 10;
+    user-select: none;
+  }
+  .divider .grip { width: 36px; height: 4px; border-radius: 4px; background: var(--line); }
+  .divider .divider-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); }
+
+  .plan-wrap { min-height: 0; overflow: hidden; position: relative; }
+  .plan-col {
+    height: 100%;
+    padding: 14px 16px calc(24px + var(--safe-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .plan-col::-webkit-scrollbar { width: 4px; }
+  .plan-col::-webkit-scrollbar-thumb { background: var(--line); }
+
+  .meta-card {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .meta-card .ic { font-size: 16px; flex-shrink: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: var(--paper); border-radius: 50%; border: 1px solid var(--line); }
+  .meta-card .meta-t { flex: 1; }
+  .meta-card .meta-name { font-weight: 500; font-size: 13px; line-height: 1.3; }
+  .meta-card .meta-desc { font-size: 11px; color: var(--mute); margin-top: 2px; line-height: 1.4; }
+  .meta-card.hotel { border-left: 3px solid var(--hotel); }
+  .meta-card.transfer { border-left: 3px solid var(--plane); }
+
+  .day { margin-bottom: 20px; }
+  .day-header {
+    display: flex; align-items: baseline; gap: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--line);
+    margin-bottom: 10px;
+  }
+  .day-num { font-family: 'Instrument Serif', serif; font-size: 36px; line-height: 1; color: var(--accent); font-style: italic; }
+  .day-meta { flex: 1; min-width: 0; }
+  .day-date { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); margin-bottom: 2px; }
+  .day-title { font-size: 14px; font-weight: 500; letter-spacing: -.01em; line-height: 1.25; }
+  .day-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .day-count { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--mute); white-space: nowrap; }
+
+  .weather-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 7px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: .05em;
+    color: var(--mute);
+    white-space: nowrap;
+  }
+  .weather-pill .hi { color: var(--accent); font-weight: 500; }
+  .weather-pill .lo { color: var(--thames); }
+
+  .stop {
+    display: flex; gap: 10px;
+    padding: 10px 10px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    margin-bottom: 3px;
+    border-radius: 2px;
+    position: relative;
+  }
+  .stop:active { background: var(--paper-2); }
+  .stop.active { background: var(--paper-2); border-color: var(--gold); box-shadow: inset 3px 0 0 var(--accent); }
+  .stop.done .stop-name { text-decoration: line-through; text-decoration-color: var(--mute); color: var(--mute); }
+  .stop.booked::before {
+    content: '📌'; position: absolute; left: -4px; top: 8px; font-size: 10px;
+  }
+  .stop.booked {
+    background: linear-gradient(to right, rgba(212,168,74,.08), transparent 40%);
+    border-left: 2px solid var(--booked);
+  }
+
+  .checkbox {
+    width: 22px; height: 22px;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: var(--paper);
+    transition: all .3s cubic-bezier(.2,.8,.2,1);
+    margin-top: 1px;
+  }
+  .checkbox svg { opacity: 0; transform: scale(.5); transition: all .3s cubic-bezier(.4,1.4,.5,1); }
+  .stop.done .checkbox { background: var(--green); border-color: var(--green); }
+  .stop.done .checkbox svg { opacity: 1; transform: scale(1); stroke: var(--paper); }
+
+  .stop-body { flex: 1; min-width: 0; }
+  .stop-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 1px; }
+  .stop-name { font-size: 14px; font-weight: 500; letter-spacing: -.01em; line-height: 1.25; }
+  .stop-time { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .08em; color: var(--mute); flex-shrink: 0; }
+  .stop-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: .12em; text-transform: uppercase;
+    padding: 1px 5px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--mute);
+    margin-top: 4px; margin-right: 3px;
+  }
+  .stop-tag.eat { color: var(--accent); border-color: rgba(200,70,44,.3); }
+  .stop-tag.view { color: var(--thames); border-color: rgba(45,93,123,.3); }
+  .stop-tag.museum { color: var(--green); border-color: rgba(74,107,58,.3); }
+  .stop-tag.must { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .stop-tag.booked { background: var(--booked); color: var(--ink); border-color: var(--booked); }
+  .stop-hint { font-size: 11px; color: var(--mute); margin-top: 2px; font-style: italic; line-height: 1.4; }
+
+  .route-line {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 12px 4px 38px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: .08em;
+    color: var(--mute);
+    position: relative;
+  }
+  .route-line::before {
+    content: '';
+    position: absolute;
+    left: 22px; top: 0; bottom: 0;
+    width: 1.5px;
+    background-image: linear-gradient(to bottom, var(--line) 50%, transparent 50%);
+    background-size: 2px 5px;
+  }
+  .route-line .route-ic { font-size: 11px; }
+  .route-line .route-txt { text-transform: uppercase; }
+  .route-line .route-time { color: var(--ink); font-weight: 500; }
+
+  /* Food/restaurant recommendation shelf */
+  .food-shelf {
+    margin-top: 10px;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(200,70,44,.05), rgba(217,126,61,.05));
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  .food-shelf-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .food-list {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .food-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .food-item:active { background: var(--paper-2); }
+  .food-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #b8734a; flex-shrink: 0;
+    margin-top: 6px;
+  }
+  .food-main { flex: 1; min-width: 0; }
+  .food-name { font-weight: 500; font-size: 12px; line-height: 1.3; }
+  .food-meta { font-size: 10px; color: var(--mute); margin-top: 1px; line-height: 1.3; }
+
+  /* Detail sheet */
+  .detail-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,22,18,.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease;
+    z-index: 500;
+  }
+  .detail-overlay.open { opacity: 1; pointer-events: all; }
+
+  .detail-panel {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    max-height: 85vh; max-height: 85dvh;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+    border-radius: 18px 18px 0 0;
+    padding: 8px 22px calc(24px + var(--safe-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateY(100%);
+    transition: transform .4s cubic-bezier(.2,.8,.2,1);
+    z-index: 501;
+    box-shadow: 0 -20px 60px -20px rgba(0,0,0,.3);
+  }
+  .detail-panel.open { transform: translateY(0); }
+
+  .sheet-handle { width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: 6px auto 16px; }
+
+  .d-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: var(--mute); margin-bottom: 6px; }
+  .d-title { font-family: 'Instrument Serif', serif; font-size: 30px; line-height: 1.05; letter-spacing: -.02em; margin-bottom: 8px; }
+  .d-address { font-size: 12px; color: var(--mute); font-style: italic; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--line); }
+  .d-booking-badge {
+    display: inline-block;
+    background: var(--booked); color: var(--ink);
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .d-section { margin-bottom: 16px; }
+  .d-section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+  .d-section p { font-size: 14px; line-height: 1.5; color: var(--ink); font-weight: 300; }
+  .d-section p em { color: var(--ink); }
+
+  .d-btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .d-action {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px;
+    background: var(--ink);
+    color: var(--paper);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+    border: 1px solid var(--ink);
+  }
+  .d-action.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+
+  .d-toggle {
+    width: 100%;
+    padding: 13px 18px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+    cursor: pointer;
+    color: var(--ink);
+    margin-top: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .d-toggle.done-state { background: var(--green); color: var(--paper); border-color: var(--green); }
+
+  .route-steps { list-style: none; padding: 0; margin: 6px 0 0; }
+  .route-steps li {
+    padding: 8px 0 8px 26px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-bottom: 1px dotted var(--line);
+    position: relative;
+    color: var(--ink);
+    font-weight: 300;
+  }
+  .route-steps li:last-child { border-bottom: none; }
+  .route-steps li::before { content: attr(data-ic); position: absolute; left: 0; top: 7px; font-size: 14px; }
+  .route-steps li strong { font-weight: 500; color: var(--ink); }
+
+  @media (min-width: 900px) {
+    .app { grid-template-rows: auto 1fr; grid-template-columns: 1fr 1.1fr; }
+    .top { grid-column: 1 / -1; padding: 20px 28px 16px; }
+    .plan-wrap { grid-row: 2; grid-column: 1; border-right: 1px solid var(--line); }
+    .map-wrap { grid-row: 2; grid-column: 2; }
+    .divider { display: none; }
+    .brand { font-size: 36px; }
+  }
+
+  .intro {
+    position: fixed; inset: 0;
+    background: var(--ink); color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    z-index: 9999;
+    transition: opacity .6s ease;
+  }
+  .intro.hide { opacity: 0; pointer-events: none; }
+  .intro h2 { font-family: 'Instrument Serif', serif; font-size: clamp(40px, 14vw, 88px); font-weight: 400; font-style: italic; letter-spacing: -.02em; }
+  .intro .line { width: 40px; height: 1px; background: var(--paper); opacity: .4; margin: 14px 0; }
+  .intro p { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .3em; text-transform: uppercase; opacity: .6; }
+</style>
+</head>
+<body>
+
+<div class="intro" id="intro">
+  <p>Loading</p>
+  <div class="line"></div>
+  <h2>London.</h2>
+  <div class="line"></div>
+  <p>v3 · 23 — 26 April</p>
+</div>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">Londra<em>.</em><span class="v">v3</span></div>
+      <div class="dates"><strong>23 — 26 Nis</strong> · 4 gün</div>
+    </div>
+    <div class="progress-wrap">
+      <span id="progressText">0 / 0</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <button class="reset-btn" id="resetBtn">Sıfırla</button>
+    </div>
+  </header>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-filter">
+      <button data-filter="all" class="on">Tümü</button>
+      <button data-filter="stops">Plan</button>
+      <button data-filter="food">Yemek</button>
+    </div>
+    <div class="map-legend">
+      <div class="legend-row"><span class="legend-dot" style="background:#8b3a3a"></span>Otel</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#6d4c8f"></span>Havalimanı</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#c8462c"></span>Gün 1</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#d97e3d"></span>Gün 2</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#4a6b3a"></span>Gün 3</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#2d5d7b"></span>Gün 4</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#b8734a"></span>Yemek</div>
+    </div>
+  </div>
+
+  <div class="divider" id="divider">
+    <div class="grip"></div>
+    <div class="divider-label">↕ Sürükle</div>
+    <div class="grip"></div>
+  </div>
+
+  <div class="plan-wrap">
+    <div class="plan-col" id="planCol"></div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="overlay"></div>
+<aside class="detail-panel" id="detailPanel">
+  <div class="sheet-handle"></div>
+  <div id="detailContent"></div>
+</aside>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ======================= DATA ======================= */
+
+const HOTEL = {
+  id: 'hotel', name: '39 Studios',
+  address: '39 Queensborough Terrace, Bayswater, London W2 3SY',
+  lat: 51.5118889, lng: -0.1855569,
+  nearestTube: 'Queensway (Central) / Bayswater (District/Circle) — 3 dk',
+  info: 'Bayswater, Hyde Park\'ın kuzey sınırında, Kensington Gardens\'a 5 dk yürüyüş. Queensway ve Bayswater metro istasyonları 3 dakika mesafede — Queensway Central line doğrudan Oxford Circus, Bond Street, Liverpool Street\'e. Bayswater District/Circle Victoria\'ya gider.',
+  tip: 'Queensway Central line\'ı tercih et — şehir merkezine daha hızlı. Yakında Whiteleys, 24/7 market, Portobello 15 dk.'
+};
+
+const FLIGHTS = {
+  arrival: {
+    id: 'arrival', airport: 'London Luton (LTN)',
+    lat: 51.875462, lng: -0.372755,
+    flight: 'W9 5328 · IST 13:50 → LTN 16:00',
+    time: '23 Nis · 16:00 iniş'
+  },
+  departure: {
+    id: 'departure', airport: 'London Gatwick South (LGW)',
+    lat: 51.1561564, lng: -0.1639589,
+    flight: 'W9 5729 · LGW 13:40 → IST 19:35',
+    time: '26 Nis · 13:40 kalkış'
+  }
+};
+
+const TRANSFERS = {
+  arrival: {
+    title: 'LTN → Otel · National Express A1',
+    summary: 'Luton → Marble Arch → 10 dk yürüyüş',
+    duration: '~75-90 dk · £10-14',
+    steps: [
+      { ic: '✈️', text: '<strong>16:00 Luton\'a iniş.</strong> Bagajı al (küçük terminal, 15-20 dk).' },
+      { ic: '🎫', text: '<strong>National Express A1</strong> → Terminal çıkışında Onward Travel kiosk\'tan bilet, ya da önceden nationalexpress.com (£6-10 erken).' },
+      { ic: '🚌', text: '<strong>Airport Bus Station</strong> → ~15 dk\'da bir kalkıyor, 24/7. Marble Arch\'a ~65-75 dk.' },
+      { ic: '🚶', text: '<strong>Marble Arch</strong>\'ta in → Bayswater Rd boyunca batıya <strong>~10 dk, 800m</strong> → otel.' },
+      { ic: '💡', text: '<em>Alternatif:</em> DART → Luton Parkway → St Pancras train (32 dk) → Central line → Queensway. ~60 dk ama £25+ ve bagajla zor.' }
+    ]
+  },
+  departure: {
+    title: 'Otel → LGW · National Express 025',
+    summary: 'Otel → Victoria Coach Station → Gatwick South',
+    duration: '~2-2.5 saat · £10-15 · 3.5 saat önce çık',
+    steps: [
+      { ic: '⏰', text: '<strong>Uçuş 13:40 → 10:40\'da havalimanında ol.</strong> 10:10 National Express\'e bin → 08:30\'da otelden çık.' },
+      { ic: '🚇', text: '<strong>Otel → Victoria Coach Station</strong>: Bayswater (District/Circle) → Victoria, 4 durak, ~15 dk + 5 dk yürüyüş.' },
+      { ic: '🚌', text: '<strong>Victoria → Gatwick South</strong>: National Express 025. ~1h 5dk–1h 40dk. Doğrudan South Terminal.' },
+      { ic: '✈️', text: 'South Terminal\'de yolcu işlemleri + güvenlik ~30-45 dk. 12:45\'te gate\'te ol.' },
+      { ic: '💡', text: '<em>Hızlı alt:</em> Victoria → Gatwick Express train 30 dk (£20+). Zaman darsa bunu seç.' }
+    ]
+  }
+};
+
+/* EAT/DRINK recommendations (from user notes, geo-clustered) */
+const FOOD = [
+  // Soho
+  { id: 'berenjak', name: 'Berenjak Soho', kind: 'İran · Michelin Bib', area: 'Soho', lat: 51.5130327, lng: -0.1307591, note: '1 Michelin Bib · Persian ocakbaşı' },
+  { id: 'bao-soho', name: 'BAO Soho', kind: 'Tayvan · Bib Gourmand', area: 'Soho', lat: 51.5132162, lng: -0.1365562, note: 'Klasik braised pork bao efsane' },
+  { id: 'humble', name: 'Humble Chicken', kind: 'Japon yıldız · yakitori', area: 'Soho', lat: 51.513579, lng: -0.131857, note: 'Yıldız Japon · premium yakitori' },
+  { id: 'speedboat', name: 'Speedboat Bar', kind: 'Tayland', area: 'Soho', lat: 51.5133, lng: -0.1313, note: 'Bangkok boat-noodle sokak ruhu' },
+  { id: 'junkyard', name: 'Junkyard Burger', kind: 'Smash burger', area: 'Soho', lat: 51.5146, lng: -0.1365, note: 'Yeni nesil London smash burger' },
+  { id: 'mrfoggs-gin', name: 'Mr Fogg\'s Gin Parlour', kind: 'Cocktail bar', area: 'Covent Garden', lat: 51.5110147, lng: -0.1267847, note: '300+ gin · Victorian keşif teması' },
+  // Fitzrovia
+  { id: 'circolo', name: 'Circolo Popolare', kind: 'Sicilya-İtalyan · trendy', area: 'Fitzrovia', lat: 51.5171895, lng: -0.1338679, note: '⭐ En yüksek puanlı · rezervasyon şart' },
+  // Shoreditch
+  { id: 'dishoom-sh', name: 'Dishoom Shoreditch', kind: 'Hint · ikon', area: 'Shoreditch', lat: 51.5245002, lng: -0.0765998, note: 'Bombay Irani café · bacon naan ünlü' },
+  // Covent Garden
+  { id: 'seven-dials', name: 'Seven Dials Market', kind: 'Food hall', area: 'Covent Garden', lat: 51.5139632, lng: -0.1260421, note: '20+ stand · Arnabeet chicken, Pizza Pilgrims' },
+  { id: 'neals-yard', name: 'Neal\'s Yard', kind: 'Renkli avlu · kafeler', area: 'Covent Garden', lat: 51.5144724, lng: -0.1263531, note: 'Covent Garden\'ın gizli renk patlaması' },
+  { id: 'apple-market', name: 'Apple Market · Covent Garden', kind: 'El sanatı pazarı', area: 'Covent Garden', lat: 51.5120072, lng: -0.1230576, note: 'Covent Garden\'ın eski meyve pazarı' },
+  // Mayfair
+  { id: 'mercato-m', name: 'Mercato Mayfair', kind: 'Kilise food hall', area: 'Mayfair', lat: 51.5131568, lng: -0.1528891, note: '1828 kilisesinde 15+ stand' },
+  { id: 'royal-academy', name: 'Royal Academy of Arts', kind: 'Sanat · sergiler', area: 'Mayfair', lat: 51.5094426, lng: -0.1398686, note: 'Piccadilly · değişen sergiler' },
+  // City / St Paul's
+  { id: 'madison', name: 'Madison Rooftop', kind: 'St Paul\'s manzaralı bar', area: 'City', lat: 51.5138713, lng: -0.0954593, note: 'One New Change çatı · kokteyl' },
+  { id: 'garden120', name: 'Garden at 120', kind: 'Ücretsiz rooftop', area: 'City', lat: 51.5136, lng: -0.0822, note: 'Sky Garden alternatifi · rezervasyon yok · ücretsiz' },
+  // Chelsea (cumartesi için)
+  { id: 'bluebird', name: 'Bluebird Chelsea', kind: 'King\'s Rd brunch', area: 'Chelsea', lat: 51.4847503, lng: -0.1755033, note: 'King\'s Road ikonu · weekend brunch' },
+  { id: 'saatchi', name: 'Saatchi Gallery', kind: 'Çağdaş sanat · ücretsiz', area: 'Chelsea', lat: 51.4906972, lng: -0.1587165, note: 'Duke of York HQ · çağdaş sergiler' },
+  { id: 'royal-hosp', name: 'Royal Hospital Chelsea', kind: 'Wren 1682', area: 'Chelsea', lat: 51.4875836, lng: -0.1575795, note: 'Chelsea Pensioners\' grounds' },
+  { id: 'albert-br', name: 'Albert Bridge', kind: 'Pembe köprü · fotoğraf', area: 'Chelsea', lat: 51.4822164, lng: -0.1666632, note: '"Trembling Lady" · ışıkları meşhur' },
+  // Notting Hill / Bayswater (pazar için)
+  { id: 'granger', name: 'Granger & Co Notting Hill', kind: 'Avustralya brunch', area: 'Notting Hill', lat: 51.5145986, lng: -0.1977545, note: 'Bill\'s ricotta hotcakes ikon' },
+  { id: 'churchill', name: 'The Churchill Arms', kind: 'Pub + Tayland', area: 'Kensington', lat: 51.5069117, lng: -0.194801, note: 'Çiçek patlamış ikonik pub' },
+  // Rotherhithe
+  { id: 'mayflower', name: 'The Mayflower Pub', kind: 'Thames\'in en eski pub', area: 'Rotherhithe', lat: 51.5018403, lng: -0.0536173, note: '1550 · Pilgrims buradan yola çıktı' },
+  // Downing
+  { id: 'downing', name: '10 Downing Street', kind: 'Başbakan evi', area: 'Westminster', lat: 51.5032564, lng: -0.1275902, note: 'Sadece dışarıdan · yanından geçerken' }
+];
+
+/* ======================= ITINERARY ======================= */
+const ITINERARY = [
+  {
+    day: 1, dayLabel: 'Perşembe · 23 Nisan', theme: 'Varış + The City akşamı',
+    weather: { hi: 17, lo: 5, icon: '⛅', desc: 'Parçalı bulutlu · yağmursuz' },
+    preTransfer: 'arrival',
+    stops: [
+      { id: 'leadenhall', name: 'Leadenhall Market', time: '18:00 — 19:30',
+        tags: ['eat', 'must'], tagLabels: { eat: 'EAT/DRINK', must: 'HP LOKASYON' },
+        hint: 'Diagon Alley · Victorian demir-cam çatı',
+        lat: 51.512766, lng: -0.0835289, address: 'Gracechurch St, London EC3V 1LT',
+        history: 'Leadenhall Market\'in tarihi 14. yüzyıla uzanır; burası ortaçağda Roma forumunun kalıntıları üzerinde kurulan bir et-balık-kümes hayvanı pazarıydı. Bugünkü muhteşem Victorian çatı Sir Horace Jones\'un 1881 tasarımıdır — aynı mimarın Tower Bridge\'i de vardır. Bordo, krem ve yeşil tonlarındaki boyalı demir işleri ve cam tavanı tam bir estetik bayramıdır.',
+        knowBefore: 'Harry Potter\'ın ilk filminde Leaky Cauldron\'a giriş ve Diagon Alley sahneleri burada çekildi (Bull\'s Head Passage, mavi kapı). Perşembe akşamı City çalışanları pub\'larda yoğun — canlı atmosfer.',
+        tip: 'Sky Garden\'a 5 dk yürüyüş. Önce Leadenhall\'i gez, sonra gün batımı için Sky Garden\'a geç. Alternatif rooftop: Garden at 120 (ücretsiz, rezervasyon yok) hemen yakında.',
+        nearbyFood: ['madison', 'garden120'],
+        routeNext: { to: 'Sky Garden', mode: 'walk', time: '5 dk', distance: '400m', detail: 'Lime St → Fenchurch St, doğuya yürü' }
+      },
+      { id: 'skygarden', name: 'Sky Garden Rooftop', time: '19:45 — 21:30',
+        tags: ['view', 'eat', 'booked'], tagLabels: { view: 'MANZARA', eat: 'EAT/DRINK', booked: 'DOLU' },
+        hint: 'Walkie-Talkie · 35. kat · gün batımı (~20:07)',
+        lat: 51.5112422, lng: -0.0835493, address: '1 Sky Garden Walk, London EC3M 8AF',
+        history: '"Walkie-Talkie" lakaplı 20 Fenchurch Street (2014), Rafael Viñoly\'nin eseri. Binanın 35-37. katlarındaki bu üç katlı bahçe, şehrin "public amenity" yükümlülüğünün bir parçası olarak yapıldı — yani ücretsiz ama rezervasyon zorunlu.',
+        knowBefore: '⚠️ Rezervasyonlar dolu → <strong>walk-in bar/brasserie rezervasyonu</strong> bir alternatif (Darwin Brasserie, Sky Pod Bar — yemek/içki minimumuyla). Ya da <strong>Garden at 120</strong>\'ye git: 5 dk yürüyüş, aynı aile (City), ücretsiz, rezervasyon GEREKMİYOR, harika panorama.',
+        tip: '⭐ Plan B: <strong>Garden at 120</strong> (Fen Court, 120 Fenchurch St) — Sky Garden\'a 3 dk yürüyüş, aynı bölgede, The Gherkin manzarası. Mükemmel fallback.',
+        nearbyFood: ['garden120', 'madison'],
+        routeNext: { to: 'Otele dönüş', mode: 'tube', time: '25 dk', distance: '8.5 km', detail: 'Monument → District/Circle → Bayswater' }
+      }
+    ]
+  },
+  {
+    day: 2, dayLabel: 'Cuma · 24 Nisan', theme: 'Müze günü + Soho/Shoreditch akşamı',
+    weather: { hi: 16, lo: 6, icon: '🌤', desc: 'Güneşli aralıklar · yağmursuz' },
+    stops: [
+      { id: 'nhm', name: 'Natural History Museum', time: '12:00 — 14:30',
+        tags: ['museum', 'booked'], tagLabels: { museum: 'MÜZE · ÜCRETSİZ', booked: 'REZERVASYON' },
+        booked: { ref: '12:00 girişin var', note: 'Rezervasyonun var · saat 12:00\'de orada ol' },
+        hint: '"Hope" mavi balina · dinozorlar · neo-Gotik saray',
+        lat: 51.496715, lng: -0.1763672, address: 'Cromwell Rd, South Kensington, London SW7 5BD',
+        history: 'Alfred Waterhouse\'un 1881 tasarımı olan bu bina, bir müzeden çok bir katedrale benzer — her tuğlası ve seramiği bilim ve doğanın yüceltilmesi için özel yapılmış. Koleksiyonun çekirdeği 1753\'te British Museum\'un kurucusu Sir Hans Sloane\'un örneklerinden gelir. 80 milyon örnek barındırır.',
+        knowBefore: 'Rezervasyonun 12:00. Kalabalığı geçmek için rezervasyon sahipleri kuyruğuna gir (sağdan). Hintze Hall\'daki 25m\'lik "Hope" mavi balina 2017\'den beri asılı. 2.5 saat yeter — Dinosaurs → Earth Hall → Mammals rotası.',
+        tip: 'Çıkışta South Kensington metro üzerinden Green Park / Mercato Mayfair\'e geç.',
+        routeStart: { from: 'Otel', mode: 'tube', time: '18 dk', distance: '4 km', detail: 'Queensway (Central) → Notting Hill Gate → Circle/District → South Kensington' },
+        routeNext: { to: 'Mercato Mayfair (öğle)', mode: 'tube+walk', time: '22 dk', distance: '4.5 km', detail: 'South Kensington (Piccadilly, 2 durak) → Green Park → 8 dk yürüyüş kuzeybatı' }
+      },
+      { id: 'mercato-mayfair', name: 'Mercato Mayfair · Öğle Yemeği', time: '14:50 — 15:20',
+        tags: ['eat'], tagLabels: { eat: 'EAT/DRINK · HIZLI' },
+        hint: 'Deconsacrated 1828 kilisesinde food hall',
+        lat: 51.5131568, lng: -0.1528891, address: 'St. Mark\'s Church, 13A N Audley St, W1K 6ZA',
+        history: 'St. Mark\'s, 1828\'de Sir Robert Smirke (British Museum\'u da tasarladı) tarafından Greek Revival tarzında yapıldı. 1974\'te kapandı, on yıllarca boş kaldı. 2019\'da İtalyan Mercato kurucusu Andrea Rasca burayı sürdürülebilir bir food hall\'a dönüştürdü: vitraylar, kemerler, organ korunmuş.',
+        knowBefore: '⏱ Saat dar — 30 dk için hızlı öğle. İtalyan pasta, bao, Meksikan, Hint curry. Ayakta bir pizza slice ya da paketle al-götür seçeneği.',
+        tip: 'National Gallery\'ye 15:30\'da yetişmek için 15:20\'de mutlaka ayrıl. Bond Street metro yerine Green Park\'tan Piccadilly line ile Piccadilly Circus, sonra 5 dk yürüyüş daha hızlı.',
+        routeNext: { to: 'National Gallery', mode: 'walk', time: '12 dk', distance: '1 km', detail: 'Güneye yürü: N Audley → Berkeley Sq → Piccadilly → Trafalgar Sq' }
+      },
+      { id: 'national-gallery', name: 'National Gallery', time: '15:30 — 18:00',
+        tags: ['museum', 'booked'], tagLabels: { museum: 'MÜZE · ÜCRETSİZ', booked: 'REZERVASYON' },
+        booked: { ref: '15:30 girişin var', note: 'Rezervasyonun var · saat 15:30\'da orada ol' },
+        hint: '2400+ Avrupa şaheseri · Trafalgar Square · ücretsiz',
+        lat: 51.508929, lng: -0.128299, address: 'Trafalgar Square, London WC2N 5DN',
+        history: '1824\'te kurulan National Gallery, İngiltere\'nin merkezi Avrupa resim koleksiyonudur. William Wilkins\'in neoklasik binası 1838\'de tamamlandı. Hollanda\'daki Rijksmuseum\'dan farklı olarak devlet tarafından kraliyet koleksiyonundan değil, özel bağışlarla kurulmuş — "halkın müzesi" felsefesi.',
+        knowBefore: 'Mutlaka gör: Van Gogh Sunflowers, da Vinci Virgin of the Rocks, Vermeer Young Woman Standing at a Virginal, Turner Fighting Temeraire, Caravaggio Supper at Emmaus. 2-3 saatte highlight rotası yap — müze rehberinden "Top 30" haritasını al.',
+        tip: 'Çıktıktan sonra Trafalgar Sq → Whitehall yürüyüşü ile Downing Street gate\'inden geç (10 Downing), 5 dk sonra Big Ben\'e varırsın.',
+        nearbyFood: ['downing', 'mrfoggs-gin', 'seven-dials', 'neals-yard', 'apple-market'],
+        routeNext: { to: 'Covent Garden gezisi', mode: 'walk', time: '8 dk', distance: '600m', detail: 'Kuzeye: St Martin\'s Ln → Covent Garden piazza' }
+      },
+      { id: 'covent-garden-stroll', name: 'Covent Garden Yürüyüşü', time: '18:10 — 19:30',
+        tags: ['view'], tagLabels: { view: 'SOKAK GEZISI' },
+        hint: 'Apple Market · Neal\'s Yard · Seven Dials Market',
+        lat: 51.5120072, lng: -0.1230576, address: 'Covent Garden, London WC2E',
+        history: 'Covent Garden (Convent Garden\'dan gelir, Westminster Abbey keşişlerinin sebze bahçesi) 1200\'lerden beri bir pazar yeri. Inigo Jones\'un 1631 piazza\'sı İngiltere\'nin ilk meydan planlamasıdır. 1974\'e kadar toptan meyve-sebze-çiçek pazarı, şimdi ünlü Apple Market (el sanatı) ve sokak performansları merkezi.',
+        knowBefore: 'Apple Market (piazza içindeki el sanatı), Neal\'s Yard (7 Dials yakınındaki renkli gizli avlu — sarı-turuncu-pembe binalar), Seven Dials Market (food hall) hepsi 5 dk yürüyüş içinde.',
+        tip: 'Sokak sanatçıları piazza\'da akşam ~18-20 arası en aktif. Neal\'s Yard fotoğraf için cennet — kalabalık değil, renk patlaması.',
+        nearbyFood: ['seven-dials', 'neals-yard', 'apple-market', 'mrfoggs-gin'],
+        routeNext: { to: 'Soho akşam yemeği', mode: 'walk', time: '10 dk', distance: '700m', detail: 'Seven Dials → Cambridge Circus → Soho içine' }
+      },
+      { id: 'soho-dinner', name: 'Soho Akşam Yemeği · SEÇ', time: '19:45 — 21:30',
+        tags: ['eat'], tagLabels: { eat: 'EAT/DRINK · SEÇİM' },
+        hint: 'Circolo Popolare ⭐ (Sicilya) · ya da Berenjak / BAO / Humble',
+        lat: 51.5171895, lng: -0.1338679, address: 'Rathbone Pl veya Soho (seçime göre)',
+        history: 'Soho, 17. yüzyılda av alanıydı — avcı çığlığı "So-ho!"dan adını alır. 18-19. yy\'da bohem ve göçmen topluluğun merkezi (Karl Marx burada yaşadı). Bugün Londra\'nın en yoğun restoran-bar damarı; her sokakta yeni açılan bir yer.',
+        knowBefore: '⭐ <strong>Circolo Popolare</strong> (Rathbone Pl, Fitzrovia): Sicilya-İtalyan, 4.8 yıldız · limonlu truffle pasta efsane · rezervasyon şart (circolopopolareldn.com). Alternatifler: Berenjak (İran, Michelin Bib, Romilly St), BAO Soho (Tayvan, braised pork), Humble Chicken (Japon yıldız yakitori), Speedboat (Tayland), Junkyard (burger).',
+        tip: 'Circolo Popolare için bir gün öncesinden rez al — walk-in hiç şansı yok. Yemekten sonra Mr Fogg\'s Gin Parlour (Covent Garden, 10 dk yürüyüş, 300+ gin) için mükemmel devamı.',
+        nearbyFood: ['circolo', 'berenjak', 'bao-soho', 'humble', 'speedboat', 'junkyard', 'mrfoggs-gin'],
+        routeNext: { to: 'Brick Lane (Shoreditch)', mode: 'tube', time: '18 dk', distance: '3 km', detail: 'Tottenham Court Rd → Central line → Liverpool Street → 8 dk yürüyüş' }
+      },
+      { id: 'brickjazz1', name: 'Brick Lane Jazz · Açılış', time: '22:00 — 24:00',
+        tags: ['must'], tagLabels: { must: 'FESTİVAL' },
+        hint: '24-26 Nisan · East London underground jazz',
+        lat: 51.5203723, lng: -0.0733297, address: 'Truman Brewery, 91 Brick Ln, E1 6QR',
+        history: 'Brick Lane, 17. yüzyıldan itibaren göç dalgalarının damarı oldu — Huguenotlar, İrlandalılar, Yahudiler, şimdi Bangladeşli topluluk ("Banglatown"). Truman Brewery, Londra\'nın en büyük bira fabrikalarından biriydi (1666\'dan 1989\'a); şimdi yaratıcı sanayinin merkezi. Festival 2022\'de başladı, 5. yılını kutluyor — 2026: 24-26 Nisan.',
+        knowBefore: 'Festival 10+ mekana yayılıyor (Truman Brewery, 93 Feet East, Village Underground). Cuma açılış gecesi daha chill — launch vibe. Bilet: bricklanejazzfestival.com.',
+        tip: 'Eğer Circolo Popolare yemekteyse ve geç kalırsan, direkt Dishoom Shoreditch gece atıştırması da olabilir — 01:00\'e kadar açık.',
+        nearbyFood: ['dishoom-sh'],
+        routeNext: { to: 'Otele dönüş', mode: 'Uber', time: '25 dk', distance: '9 km', detail: 'Gece tube kapalı · Uber £15-20' }
+      }
+    ]
+  },
+  {
+    day: 3, dayLabel: 'Cumartesi · 25 Nisan', theme: '🌿 Lokal Chelsea · relax + pub',
+    weather: { hi: 14, lo: 5, icon: '🌦', desc: 'Hafif yağmur olasılığı · şemsiye + kat kat' },
+    stops: [
+      { id: 'chelsea-brunch', name: 'Bluebird Chelsea · Brunch', time: '10:30 — 12:00',
+        tags: ['eat', 'must'], tagLabels: { eat: 'BRUNCH', must: 'LOKAL' },
+        hint: 'King\'s Road ikonu · weekend brunch vibe',
+        lat: 51.4847503, lng: -0.1755033, address: '350 King\'s Rd, London SW3 5UU',
+        history: 'Bluebird, 1923\'te inşa edilmiş Chelsea\'nin Bluebird Motor Company garajıdır — Art Deco yapı, 1920\'lerin otomobil kültürünün anıtı. Sir Terence Conran 1997\'de restoran-deli-çiçekçi-kitapçı kompleksine dönüştürdü. King\'s Road\'un iki uç karakterini yakalar: punk 70\'ler ile Chelsea chic.',
+        knowBefore: 'Cumartesi brunch yoğun — 09:45-10:00 arası rez al (bluebird-chelsea.com). Poached eggs on sourdough, ricotta hotcakes, avocado on cornbread klasikleri. Dış teras ısıtıcılı — yağmurluysa da açık.',
+        tip: 'Brunch sonrası King\'s Road\'da doğuya yürüyüş başla — Saatchi Gallery\'ye 10 dk.',
+        routeStart: { from: 'Otel', mode: 'tube', time: '25 dk', distance: '4 km', detail: 'Bayswater → District → Sloane Sq ya da doğrudan taksi/Uber (£10-15)' },
+        routeNext: { to: 'Saatchi Gallery', mode: 'walk', time: '15 dk', distance: '1.2 km', detail: 'King\'s Rd boyunca doğuya yürü, shopping molası yapabilirsin' }
+      },
+      { id: 'saatchi', name: 'Saatchi Gallery', time: '12:15 — 13:45',
+        tags: ['museum'], tagLabels: { museum: 'SANAT · ÜCRETSİZ' },
+        hint: 'Çağdaş sanat · Duke of York HQ',
+        lat: 51.4906972, lng: -0.1587165, address: 'Duke of York\'s HQ, King\'s Rd, SW3 4RY',
+        history: 'Saatchi Gallery 1985\'te reklam mogulü Charles Saatchi tarafından kuruldu — "YBA" (Young British Artists) hareketini doğurdu: Damien Hirst, Tracey Emin, Chris Ofili. 2008\'den beri Duke of York HQ\'da (1803 askeri okul) — 6600m² ferah galeri. Daimi koleksiyon ücretsiz, tematik sergiler genellikle ücretli.',
+        knowBefore: 'Daimi koleksiyon + güncel sergiler karışık. Web sitesinden (saatchigallery.com) o günkü sergileri kontrol et — biri ücretli olabilir (£18).',
+        tip: '1 saatte yeterli. Çıkışta Duke of York Square (avlu) — Chelsea Farmers\' Market (Cumartesi) burada.',
+        routeNext: { to: 'Royal Hospital Chelsea', mode: 'walk', time: '8 dk', distance: '600m', detail: 'Güneye, Cheltenham Tce → Royal Hospital Rd' }
+      },
+      { id: 'royal-hospital', name: 'Royal Hospital Chelsea · Grounds', time: '14:00 — 15:00',
+        tags: ['view'], tagLabels: { view: 'TARİH · ÜCRETSİZ' },
+        hint: 'Christopher Wren · 1692 · Chelsea Pensioners',
+        lat: 51.4875836, lng: -0.1575795, address: 'Royal Hospital Rd, London SW3 4SR',
+        history: 'Charles II, 1682\'de emekli askerler için kurdurdu — mimar Sir Christopher Wren (St Paul\'s\'ın da mimarı). 1692\'den beri "Chelsea Pensioners" (parlak kırmızı üniformalı emekli askerler) burada yaşıyor. Her Mayıs\'ta ünlü Chelsea Flower Show grounds\'da yapılır. Wren\'in klasik simetrik mimarisi Thames\'a bakan avluda.',
+        knowBefore: 'Grounds (bahçeler) + Figure Court ziyareti ücretsiz. Şapel ve Great Hall belirli saatlerde turla açık (website\'den kontrol). Cumartesi günü genelde açık ama sınırlı.',
+        tip: '30-45 dk yeter. Pensioners\'la karşılaşırsan selam ver — burada yaşıyorlar, onların evi.',
+        routeNext: { to: 'Albert Bridge fotoğraf', mode: 'walk', time: '10 dk', distance: '700m', detail: 'Batıya Royal Hospital Rd → Chelsea Embankment → Albert Bridge' }
+      },
+      { id: 'albert-bridge', name: 'Albert Bridge', time: '15:10 — 15:40',
+        tags: ['view', 'must'], tagLabels: { view: 'FOTOĞRAF', must: 'İKON' },
+        hint: 'Pembe-yeşil köprü · "Trembling Lady"',
+        lat: 51.4822164, lng: -0.1666632, address: 'Chelsea Embankment → Battersea',
+        history: '1873\'te R.W. Ordish tarafından "modified ogee" (değiştirilmiş ogee) tasarımında inşa edildi — nadir hybrid bir yapı, cable-stayed ve suspension karışımı. Köprü o kadar zayıftı ki günümüzde hâlâ asker yürüyüş düzeninde geçiş yasak ("Trembling Lady" lakabı). 1884 yeniden inşa, 1973 ek takviyeler. Gece 4000\'den fazla LED ile aydınlanır — Londra\'nın en fotojenik köprüsü.',
+        knowBefore: 'Köprünün kuzey ucundan (Chelsea tarafı) ya da Battersea Park tarafından yarıya yürü — en iyi fotoğraf açısı güney-batı, güneş öğleden sonra idealdir. Gece aydınlatması 17:30\'dan itibaren.',
+        tip: 'Battersea Park tarafında Pump House Gallery (ücretsiz) ve park yürüyüşü yapılabilir. Yağmurluysa köprü atlayıp Pig\'s Ear ya da The Cross Keys pub\'ına kaç.',
+        routeNext: { to: 'Notting Hill → Churchill Arms', mode: 'tube', time: '30 dk', distance: '6 km', detail: 'Sloane Sq (District) → Notting Hill Gate, sonra 3 dk yürüyüş' }
+      },
+      { id: 'churchill-arms', name: 'The Churchill Arms', time: '16:30 — 18:30',
+        tags: ['eat'], tagLabels: { eat: 'PUB + TAYLAND' },
+        hint: 'Çiçek patlamış pub · Winston\'ın büyükanne-dedesi devam ederdi',
+        lat: 51.5069117, lng: -0.194801, address: '119 Kensington Church St, London W8 7LN',
+        history: 'Churchill Arms 1750\'lerden beri ayakta; ismini Winston Churchill\'in büyük ebeveynleri burayı 1800\'lerde ziyaret ettiği için aldı (aile söylentisi). Binanın dış cephesi 1000+ saksı çiçekle kaplıdır — her yıl £25,000 çiçeğe harcanır ve pub "London\'ın en çiçekli pub\'ı" olarak sertifikalandı. Arkada 1988\'den beri otantik Tayland restoranı var.',
+        knowBefore: 'Çiçekler yılın her mevsimi taze — 22,000+ saksı ve asma sepet. Bira + Tayland yemeği ünlü kombinasyon. Pad Thai, green curry £10-15. Rezervasyon almaz genelde — walk-in.',
+        tip: 'Cumartesi gün batımı sonrası (~19:00) çiçekler ve Tiffany tarzı vitraylar en fotojenik. İçerde Churchill memorabilia + savaş döneminden objeler.',
+        routeNext: { to: 'Otele dönüş (hazırlan, opsiyonel jazz)', mode: 'walk/tube', time: '15 dk', distance: '1.3 km', detail: 'Notting Hill Gate → Queensway 1 durak ya da 15 dk yürüyüş Kensington Gardens üzerinden' }
+      },
+      { id: 'brickjazz2', name: 'Brick Lane Jazz · Peak Night (OPSİYONEL)', time: '21:00 — 01:00',
+        tags: ['must'], tagLabels: { must: 'OPSİYONEL' },
+        hint: 'Enerjin kaldıysa · Brian Jackson headliner',
+        lat: 51.5203723, lng: -0.0733297, address: 'Truman Brewery & çevresi',
+        history: 'Cumartesi festivalin en büyük gecesi — 2026 line-up\'ında Brian Jackson (Gil Scott-Heron\'un efsanevi işbirlikçisi) headliner. Levitation Orchestra, Ruby Rushton, Amanda Whiting.',
+        knowBefore: 'Pazar sabahı erken check-out yok ama uçuş var — yorgunsan atla, bu opsiyonel. Gidersen 23:00-24:00 civarı ayrıl.',
+        tip: 'Pazar sabahı "soft" planı var — gidersen Uber\'le dönüş güvenli. Atlarsan Churchill Arms\'tan sonra otelde dinlen, ertesi gün canlı ol.',
+        routeStart: { from: 'Otel', mode: 'tube', time: '25 dk', distance: '9 km', detail: 'Bayswater → Liverpool Street → Brick Lane' }
+      }
+    ]
+  },
+  {
+    day: 4, dayLabel: 'Pazar · 26 Nisan', theme: '☕ Soft sabah · kahvaltı + bira + kalkış',
+    weather: { hi: 13, lo: 4, icon: '⛅', desc: 'Serin · hafif bulutlu' },
+    postTransfer: 'departure',
+    stops: [
+      { id: 'granger-breakfast', name: 'Granger & Co · Kahvaltı', time: '09:00 — 10:30',
+        tags: ['eat', 'must'], tagLabels: { eat: 'KAHVALTI', must: 'LOKAL FAV' },
+        hint: 'Avustralya brunch · Bill Granger · Notting Hill',
+        lat: 51.5145986, lng: -0.1977545, address: '175 Westbourne Grove, London W11 2SB',
+        history: 'Bill Granger, Sydney\'in Bondi Beach\'inde 1993\'te "healthy breakfast café" açtı; Avustralya brunch kültürünü Londra\'ya 2011\'de Notting Hill\'e getirdi. Ricotta hotcakes ve scrambled eggs on sourdough dünya çapında kopyalanan imza tabakları. Mekan aydınlık, taze, aileler için uygun — "Bill\'s plate" tüm klasikleri içerir.',
+        knowBefore: 'Rezervasyon almaz — walk-in. Pazar sabah 08:45\'te gitmeyi hedefle (09:00 açılış, kuyruk olabilir). 60-90 dk için yeterli.',
+        tip: 'Otelden 8 dk YÜRÜME! Queensborough Terrace → Queensway → Westbourne Grove. Bu yüzden bu plan mükemmel: bavul otelde durabilir, yemek sonrası alırsın.',
+        routeStart: { from: 'Otel', mode: 'walk', time: '8 dk', distance: '650m', detail: 'Queensborough Tce → Queensway (güney) → Westbourne Grove (batı)' },
+        routeNext: { to: 'Churchill Arms (bira)', mode: 'walk', time: '10 dk', distance: '800m', detail: 'Westbourne Grove → Kensington Church St güneye' }
+      },
+      { id: 'churchill-morning', name: 'Churchill Arms · Bira Molası', time: '10:45 — 11:45',
+        tags: ['eat'], tagLabels: { eat: 'ÖĞLE BİRASI' },
+        hint: 'Çiçekli pub · sabah pint · atmosfere daldır',
+        lat: 51.5069117, lng: -0.194801, address: '119 Kensington Church St, London W8 7LN',
+        history: 'Pub 11:00\'de açılıyor — Pazar sabah sakin, fotoğraf ve otantik atmosfer için mükemmel zaman. İçeri girer girmez savaş döneminden posterler, bakır aydınlatmalar, Winston Churchill büstü... çok katmanlı bir tarih parçası.',
+        knowBefore: '1 pint London Pride ya da Fuller\'s ESB yerel klasik. Saat 11-12 arası Sunday roast başlıyor ama sen zaten kahvaltı yaptın — sadece bira keyfi yap.',
+        tip: 'Otele 10 dk yürüyüş → bavulları al → Gatwick yoluna koyul. Pub\'ta 12:00\'yi geçirme!',
+        routeNext: { to: 'Otel · bavul + Gatwick', mode: 'walk', time: '10 dk', distance: '900m', detail: 'Kensington Church St kuzey → Bayswater Rd → Queensborough Tce' }
+      },
+      { id: 'hotel-pickup', name: '🏠 Otel · Bavul al + Gatwick', time: '12:00 — 12:30', hidden: true }
+    ]
+  }
+];
+
+/* ======================= STATE ======================= */
+const STORAGE_KEY = 'london-itinerary-2026-v3';
+let state = { done: {}, splitRatio: 0.5, mapFilter: 'all' };
+try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) state = { ...state, ...JSON.parse(raw) }; } catch (e) {}
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
+
+const allStops = ITINERARY.flatMap(d => d.stops.filter(s => !s.hidden).map(s => ({ ...s, day: d.day })));
+const markerRefs = {};
+const foodMarkers = {};
+let activeStopId = null;
+
+/* ======================= MAP ======================= */
+const map = L.map('map', {
+  center: [51.508, -0.13], zoom: 12, zoomControl: true, scrollWheelZoom: true, tap: true, zoomSnap: 0.5
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '© OSM · © CARTO', maxZoom: 19, subdomains: 'abcd'
+}).addTo(map);
+
+function makeIcon(dayNum, num, isDone) {
+  return L.divIcon({
+    className: 'map-marker',
+    html: `<div class="pin day-${dayNum} ${isDone ? 'done' : ''}"><span class="pin-num">${num}</span></div>`,
+    iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -24]
+  });
+}
+function makeFoodIcon() {
+  return L.divIcon({
+    className: 'map-marker',
+    html: `<div class="pin food"><span class="pin-num">🍴</span></div>`,
+    iconSize: [20, 20], iconAnchor: [10, 20], popupAnchor: [0, -18]
+  });
+}
+function makeHotelIcon() {
+  return L.divIcon({
+    className: 'map-marker',
+    html: `<div class="pin hotel-pin"><span class="pin-num">🏠</span></div>`,
+    iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28]
+  });
+}
+function makeAirportIcon() {
+  return L.divIcon({
+    className: 'map-marker',
+    html: `<div class="pin airport-pin"><span class="pin-num">✈</span></div>`,
+    iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -24]
+  });
+}
+
+// Hotel + airport
+const hotelMarker = L.marker([HOTEL.lat, HOTEL.lng], { icon: makeHotelIcon() }).addTo(map);
+hotelMarker.bindPopup(`<strong>🏠 ${HOTEL.name}</strong><br><span style="font-size:10px;color:#7a6f5e">${HOTEL.address}</span>`);
+hotelMarker.on('click', openHotelDetail);
+markerRefs['hotel'] = hotelMarker;
+
+const ltnMarker = L.marker([FLIGHTS.arrival.lat, FLIGHTS.arrival.lng], { icon: makeAirportIcon() }).addTo(map);
+ltnMarker.bindPopup(`<strong>✈ Luton (LTN)</strong><br><span style="font-size:10px;color:#7a6f5e">${FLIGHTS.arrival.flight}</span>`);
+ltnMarker.on('click', () => openTransferDetail('arrival'));
+
+const lgwMarker = L.marker([FLIGHTS.departure.lat, FLIGHTS.departure.lng], { icon: makeAirportIcon() }).addTo(map);
+lgwMarker.bindPopup(`<strong>✈ Gatwick (LGW)</strong><br><span style="font-size:10px;color:#7a6f5e">${FLIGHTS.departure.flight}</span>`);
+lgwMarker.on('click', () => openTransferDetail('departure'));
+
+// Stop markers
+let globalNum = 0;
+allStops.forEach(stop => {
+  globalNum++;
+  stop.globalNum = globalNum;
+  const isDone = !!state.done[stop.id];
+  const marker = L.marker([stop.lat, stop.lng], { icon: makeIcon(stop.day, globalNum, isDone) }).addTo(map);
+  marker.bindPopup(`<strong>${stop.name}</strong><br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#7a6f5e;">GÜN ${stop.day} · ${stop.time}</span>`);
+  marker.on('click', () => openDetail(stop.id));
+  markerRefs[stop.id] = marker;
+});
+
+// Food markers (hidden by default in 'all' mode — visible as smaller pins)
+FOOD.forEach(f => {
+  const marker = L.marker([f.lat, f.lng], { icon: makeFoodIcon() });
+  marker.bindPopup(`<strong>🍴 ${f.name}</strong><br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#7a6f5e;">${f.kind} · ${f.area}</span>`);
+  marker.on('click', () => openFoodDetail(f.id));
+  foodMarkers[f.id] = marker;
+});
+
+// Day paths
+const dayColors = { 1: '#c8462c', 2: '#d97e3d', 3: '#4a6b3a', 4: '#2d5d7b' };
+[1,2,3,4].forEach(dayNum => {
+  const dayStops = allStops.filter(s => s.day === dayNum);
+  if (dayStops.length < 2) return;
+  L.polyline(dayStops.map(s => [s.lat, s.lng]), { color: dayColors[dayNum], weight: 2, opacity: 0.4, dashArray: '4, 6' }).addTo(map);
+});
+
+// Airport transfer lines
+L.polyline([[FLIGHTS.arrival.lat, FLIGHTS.arrival.lng], [HOTEL.lat, HOTEL.lng]], {
+  color: '#6d4c8f', weight: 1.5, opacity: 0.35, dashArray: '2, 8'
+}).addTo(map);
+L.polyline([[HOTEL.lat, HOTEL.lng], [FLIGHTS.departure.lat, FLIGHTS.departure.lng]], {
+  color: '#6d4c8f', weight: 1.5, opacity: 0.35, dashArray: '2, 8'
+}).addTo(map);
+
+// Filter
+function applyMapFilter(f) {
+  state.mapFilter = f;
+  saveState();
+  document.querySelectorAll('.map-filter button').forEach(b => b.classList.toggle('on', b.dataset.filter === f));
+
+  const showStops = f === 'all' || f === 'stops';
+  const showFood = f === 'all' || f === 'food';
+
+  Object.values(markerRefs).forEach(m => { if (m !== hotelMarker) { if (showStops) map.addLayer(m); else map.removeLayer(m); } });
+  if (showStops) { map.addLayer(ltnMarker); map.addLayer(lgwMarker); } else { map.removeLayer(ltnMarker); map.removeLayer(lgwMarker); }
+  Object.values(foodMarkers).forEach(m => { if (showFood) map.addLayer(m); else map.removeLayer(m); });
+}
+document.querySelectorAll('.map-filter button').forEach(btn => {
+  btn.addEventListener('click', () => applyMapFilter(btn.dataset.filter));
+});
+applyMapFilter(state.mapFilter);
+
+/* ======================= RENDER PLAN ======================= */
+function renderPlan() {
+  const col = document.getElementById('planCol');
+  col.innerHTML = '';
+
+  // Hotel card
+  const hotelEl = document.createElement('div');
+  hotelEl.className = 'meta-card hotel';
+  hotelEl.innerHTML = `
+    <div class="ic">🏠</div>
+    <div class="meta-t">
+      <div class="meta-name">${HOTEL.name}</div>
+      <div class="meta-desc">${HOTEL.address}</div>
+    </div>
+  `;
+  hotelEl.addEventListener('click', openHotelDetail);
+  col.appendChild(hotelEl);
+
+  ITINERARY.forEach(day => {
+    const visibleStops = day.stops.filter(s => !s.hidden);
+    const completed = visibleStops.filter(s => state.done[s.id]).length;
+    const dayEl = document.createElement('div');
+    dayEl.className = 'day';
+    const weatherHTML = day.weather ? `
+      <span class="weather-pill">
+        <span>${day.weather.icon}</span>
+        <span class="hi">${day.weather.hi}°</span><span>/</span><span class="lo">${day.weather.lo}°</span>
+      </span>` : '';
+
+    dayEl.innerHTML = `
+      <div class="day-header">
+        <div class="day-num">0${day.day}</div>
+        <div class="day-meta">
+          <div class="day-date">${day.dayLabel}</div>
+          <div class="day-title">${day.theme}</div>
+        </div>
+        <div class="day-right">
+          <div class="day-count">${completed} / ${visibleStops.length}</div>
+          ${weatherHTML}
+        </div>
+      </div>
+      <div class="day-body"></div>
+    `;
+    const body = dayEl.querySelector('.day-body');
+
+    if (day.preTransfer) {
+      const t = TRANSFERS[day.preTransfer];
+      const tEl = document.createElement('div');
+      tEl.className = 'meta-card transfer';
+      tEl.innerHTML = `<div class="ic">✈️</div><div class="meta-t"><div class="meta-name">${t.title}</div><div class="meta-desc">${t.summary} · <strong>${t.duration}</strong></div></div>`;
+      tEl.addEventListener('click', () => openTransferDetail(day.preTransfer));
+      body.appendChild(tEl);
+    }
+
+    visibleStops.forEach((stop, i) => {
+      const isDone = !!state.done[stop.id];
+      const isActive = activeStopId === stop.id;
+      const isBooked = !!stop.booked;
+      const tagHTML = (stop.tags || []).map(t => {
+        const cls = t === 'eat' ? 'eat' : t === 'view' ? 'view' : t === 'museum' ? 'museum' : t === 'must' ? 'must' : t === 'booked' ? 'booked' : '';
+        return `<span class="stop-tag ${cls}">${stop.tagLabels?.[t] || t}</span>`;
+      }).join('');
+
+      if (i === 0 && stop.routeStart) {
+        const rEl = document.createElement('div');
+        rEl.className = 'route-line';
+        rEl.innerHTML = `<span class="route-ic">${modeIcon(stop.routeStart.mode)}</span><span class="route-txt">${stop.routeStart.from} → <span class="route-time">${stop.routeStart.time}</span></span>`;
+        body.appendChild(rEl);
+      }
+
+      const stopEl = document.createElement('div');
+      stopEl.className = `stop ${isDone ? 'done' : ''} ${isActive ? 'active' : ''} ${isBooked ? 'booked' : ''}`;
+      stopEl.dataset.id = stop.id;
+      stopEl.innerHTML = `
+        <div class="checkbox" data-check="${stop.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <div class="stop-body">
+          <div class="stop-top">
+            <div class="stop-name">${stop.name}</div>
+            <div class="stop-time">${stop.time}</div>
+          </div>
+          <div class="stop-hint">${stop.hint}</div>
+          <div>${tagHTML}</div>
+        </div>
+      `;
+      stopEl.addEventListener('click', (e) => {
+        if (e.target.closest('[data-check]')) { e.stopPropagation(); toggleDone(stop.id); }
+        else { openDetail(stop.id); }
+      });
+      body.appendChild(stopEl);
+
+      // Nearby food shelf
+      if (stop.nearbyFood && stop.nearbyFood.length) {
+        const shelf = document.createElement('div');
+        shelf.className = 'food-shelf';
+        const itemsHTML = stop.nearbyFood.map(fid => {
+          const f = FOOD.find(x => x.id === fid);
+          if (!f) return '';
+          return `<div class="food-item" data-food="${f.id}">
+            <div class="food-dot"></div>
+            <div class="food-main">
+              <div class="food-name">${f.name}</div>
+              <div class="food-meta">${f.kind} · ${f.area} · ${f.note}</div>
+            </div>
+          </div>`;
+        }).join('');
+        shelf.innerHTML = `<div class="food-shelf-title">🍴 Yakında</div><div class="food-list">${itemsHTML}</div>`;
+        shelf.querySelectorAll('.food-item').forEach(el => {
+          el.addEventListener('click', (e) => { e.stopPropagation(); openFoodDetail(el.dataset.food); });
+        });
+        body.appendChild(shelf);
+      }
+
+      if (stop.routeNext && i < visibleStops.length - 1) {
+        const rEl = document.createElement('div');
+        rEl.className = 'route-line';
+        rEl.innerHTML = `<span class="route-ic">${modeIcon(stop.routeNext.mode)}</span><span class="route-txt">→ ${stop.routeNext.to} · <span class="route-time">${stop.routeNext.time}</span> · ${stop.routeNext.detail}</span>`;
+        body.appendChild(rEl);
+      }
+    });
+
+    if (day.postTransfer) {
+      const t = TRANSFERS[day.postTransfer];
+      const tEl = document.createElement('div');
+      tEl.className = 'meta-card transfer';
+      tEl.innerHTML = `<div class="ic">✈️</div><div class="meta-t"><div class="meta-name">${t.title}</div><div class="meta-desc">${t.summary} · <strong>${t.duration}</strong></div></div>`;
+      tEl.addEventListener('click', () => openTransferDetail(day.postTransfer));
+      body.appendChild(tEl);
+    }
+
+    col.appendChild(dayEl);
+  });
+
+  updateProgress();
+}
+
+function modeIcon(mode) {
+  if (!mode) return '→';
+  if (mode.includes('walk')) return '🚶';
+  if (mode.includes('DLR')) return '🚈';
+  if (mode.includes('tube')) return '🚇';
+  if (mode === 'Uber' || mode.includes('taxi')) return '🚕';
+  if (mode.includes('bus')) return '🚌';
+  return '→';
+}
+
+function updateProgress() {
+  const total = allStops.length;
+  const done = allStops.filter(s => state.done[s.id]).length;
+  document.getElementById('progressText').textContent = `${done} / ${total}`;
+  document.getElementById('progressFill').style.width = (total ? (done/total)*100 : 0) + '%';
+}
+
+function toggleDone(id) {
+  state.done[id] = !state.done[id];
+  saveState();
+  renderPlan();
+  const stop = allStops.find(s => s.id === id);
+  if (stop && markerRefs[id]) markerRefs[id].setIcon(makeIcon(stop.day, stop.globalNum, !!state.done[id]));
+}
+
+/* ======================= DETAIL SHEET ======================= */
+function openDetail(id) {
+  const stop = allStops.find(s => s.id === id);
+  if (!stop) return;
+  activeStopId = id;
+  document.querySelectorAll('.stop').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+
+  const isDone = !!state.done[id];
+  const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ', London')}`;
+  const photosUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(stop.name + ' London')}`;
+  const bookingBadge = stop.booked ? `<div class="d-booking-badge">📌 ${stop.booked.ref}</div>` : '';
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="d-eyebrow">Gün ${stop.day} · ${stop.time}</div>
+    <h2 class="d-title">${stop.name}</h2>
+    <div class="d-address">📍 ${stop.address}</div>
+    ${bookingBadge}
+    <div class="d-section"><div class="d-section-label">Kısa Tarih</div><p>${stop.history}</p></div>
+    <div class="d-section"><div class="d-section-label">Gitmeden Bilinecekler</div><p>${stop.knowBefore}</p></div>
+    ${stop.tip ? `<div class="d-section"><div class="d-section-label">💡 İpucu</div><p><em>${stop.tip}</em></p></div>` : ''}
+    <div class="d-btn-row">
+      <a class="d-action" href="${gmapsUrl}" target="_blank" rel="noopener">🗺 Maps</a>
+      <a class="d-action ghost" href="${photosUrl}" target="_blank" rel="noopener">📷 Fotoğraflar</a>
+    </div>
+    <button class="d-toggle ${isDone ? 'done-state' : ''}" data-check="${stop.id}">
+      ${isDone ? '✓ Tamamlandı · geri al' : 'Tamamlandı olarak işaretle'}
+    </button>
+  `;
+  document.querySelector('.d-toggle').addEventListener('click', () => { toggleDone(stop.id); openDetail(stop.id); });
+
+  openSheet();
+  map.flyTo([stop.lat, stop.lng], 15, { duration: 0.7 });
+  setTimeout(() => markerRefs[stop.id]?.openPopup(), 800);
+}
+
+function openFoodDetail(id) {
+  const f = FOOD.find(x => x.id === id);
+  if (!f) return;
+  const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.name + ', London')}`;
+  const photosUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(f.name + ' London')}`;
+  document.getElementById('detailContent').innerHTML = `
+    <div class="d-eyebrow">🍴 ${f.area} · ${f.kind}</div>
+    <h2 class="d-title">${f.name}</h2>
+    <div class="d-address">${f.note}</div>
+    <div class="d-btn-row">
+      <a class="d-action" href="${gmapsUrl}" target="_blank" rel="noopener">🗺 Maps</a>
+      <a class="d-action ghost" href="${photosUrl}" target="_blank" rel="noopener">📷 Fotoğraflar</a>
+      <a class="d-action ghost" href="https://www.google.com/search?q=${encodeURIComponent(f.name + ' London menu reservation')}" target="_blank" rel="noopener">🔍 Ara</a>
+    </div>
+  `;
+  openSheet();
+  // make sure food layer visible
+  if (state.mapFilter === 'stops') applyMapFilter('all');
+  map.flyTo([f.lat, f.lng], 15, { duration: 0.7 });
+  setTimeout(() => foodMarkers[f.id]?.openPopup(), 800);
+}
+
+function openHotelDetail() {
+  document.getElementById('detailContent').innerHTML = `
+    <div class="d-eyebrow">🏠 Konaklama</div>
+    <h2 class="d-title">${HOTEL.name}</h2>
+    <div class="d-address">📍 ${HOTEL.address}</div>
+    <div class="d-section"><div class="d-section-label">Konum</div><p>${HOTEL.info}</p></div>
+    <div class="d-section"><div class="d-section-label">En Yakın Metro</div><p><strong>${HOTEL.nearestTube}</strong></p></div>
+    <div class="d-section"><div class="d-section-label">💡 İpucu</div><p><em>${HOTEL.tip}</em></p></div>
+    <div class="d-btn-row">
+      <a class="d-action" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(HOTEL.address)}" target="_blank" rel="noopener">🗺 Maps</a>
+      <a class="d-action ghost" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(HOTEL.address)}" target="_blank" rel="noopener">🧭 Yol tarifi</a>
+    </div>
+  `;
+  openSheet();
+  map.flyTo([HOTEL.lat, HOTEL.lng], 15, { duration: 0.7 });
+  setTimeout(() => hotelMarker.openPopup(), 800);
+}
+
+function openTransferDetail(key) {
+  const t = TRANSFERS[key];
+  const f = key === 'arrival' ? FLIGHTS.arrival : FLIGHTS.departure;
+  const stepsHTML = t.steps.map(s => `<li data-ic="${s.ic}">${s.text}</li>`).join('');
+  document.getElementById('detailContent').innerHTML = `
+    <div class="d-eyebrow">✈️ Havalimanı Transferi</div>
+    <h2 class="d-title">${t.title}</h2>
+    <div class="d-address">${f.airport} · ${f.flight}</div>
+    <div class="d-section"><div class="d-section-label">Özet</div><p><strong>${t.summary}</strong><br><em>Tahmini: ${t.duration}</em></p></div>
+    <div class="d-section"><div class="d-section-label">Adım Adım</div><ul class="route-steps">${stepsHTML}</ul></div>
+    <div class="d-btn-row">
+      <a class="d-action" href="https://www.nationalexpress.com" target="_blank" rel="noopener">🎫 National Express</a>
+      <a class="d-action ghost" href="https://tfl.gov.uk/plan-a-journey/" target="_blank" rel="noopener">🚇 TfL Planner</a>
+    </div>
+  `;
+  openSheet();
+  const coords = key === 'arrival' ? [FLIGHTS.arrival.lat, FLIGHTS.arrival.lng] : [FLIGHTS.departure.lat, FLIGHTS.departure.lng];
+  map.flyTo(coords, 10, { duration: 0.8 });
+}
+
+function openSheet() {
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  activeStopId = null;
+  document.querySelectorAll('.stop').forEach(el => el.classList.remove('active'));
+}
+document.getElementById('overlay').addEventListener('click', closeDetail);
+
+// Swipe-down close
+let touchStartY = 0, touchDelta = 0;
+const panel = document.getElementById('detailPanel');
+panel.addEventListener('touchstart', (e) => { if (panel.scrollTop > 0) return; touchStartY = e.touches[0].clientY; touchDelta = 0; }, { passive: true });
+panel.addEventListener('touchmove', (e) => { if (panel.scrollTop > 0) return; touchDelta = e.touches[0].clientY - touchStartY; if (touchDelta > 0) panel.style.transform = `translateY(${touchDelta}px)`; }, { passive: true });
+panel.addEventListener('touchend', () => { if (touchDelta > 100) closeDetail(); panel.style.transform = ''; touchDelta = 0; }, { passive: true });
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Tüm işaretleri sıfırlamak istiyor musun?')) return;
+  state.done = {}; saveState();
+  allStops.forEach(stop => markerRefs[stop.id].setIcon(makeIcon(stop.day, stop.globalNum, false)));
+  renderPlan();
+});
+
+/* ======================= SPLIT RESIZE ======================= */
+const divider = document.getElementById('divider');
+const appEl = document.getElementById('app');
+
+function applyRatio(ratio) {
+  ratio = Math.max(0.2, Math.min(0.75, ratio));
+  state.splitRatio = ratio;
+  if (window.innerWidth < 900) appEl.style.gridTemplateRows = `auto ${ratio}fr 28px ${1 - ratio}fr`;
+  setTimeout(() => map.invalidateSize(), 50);
+}
+let dragging = false, startY = 0, startRatio = 0.5;
+function startDrag(y) { dragging = true; startY = y; startRatio = state.splitRatio; document.body.style.cursor = 'ns-resize'; }
+function moveDrag(y) { if (!dragging) return; const totalH = appEl.clientHeight; applyRatio(startRatio + (y - startY) / totalH); }
+function endDrag() { if (!dragging) return; dragging = false; document.body.style.cursor = ''; saveState(); }
+
+divider.addEventListener('mousedown', (e) => { startDrag(e.clientY); e.preventDefault(); });
+window.addEventListener('mousemove', (e) => moveDrag(e.clientY));
+window.addEventListener('mouseup', endDrag);
+divider.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientY), { passive: true });
+window.addEventListener('touchmove', (e) => { if (dragging) { moveDrag(e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+window.addEventListener('touchend', endDrag);
+
+applyRatio(state.splitRatio);
+window.addEventListener('resize', () => applyRatio(state.splitRatio));
+
+/* ======================= INIT ======================= */
+renderPlan();
+const allMarkerCoords = [[HOTEL.lat, HOTEL.lng], ...allStops.map(s => [s.lat, s.lng])];
+map.fitBounds(L.latLngBounds(allMarkerCoords), { padding: [30, 30] });
+
+setTimeout(() => { document.getElementById('intro').classList.add('hide'); map.invalidateSize(); }, 900);
+setTimeout(() => { const i = document.getElementById('intro'); if (i) i.remove(); }, 1600);
+</script>
+</body>
+</html>
